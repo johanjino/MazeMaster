@@ -1,4 +1,4 @@
-const html_path = 'H:/EIE2_Projects/MazeMaster/Application-Server Tutorials/2 - Node.js on AWS/test_page2.html'; 
+const html_path = 'H:/EIE2_Projects/MazeMaster/Application-Server Tutorials/2 - Node.js on AWS/test_page4.html'; 
 
 var express = require('express');
 var server = express();
