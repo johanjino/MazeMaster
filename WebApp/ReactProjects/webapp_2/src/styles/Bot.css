@@ -1,0 +1,10 @@
+.bot {
+    width: 200%; 
+    height: 200%; 
+    background-color: red;
+    border-radius: 200%;  
+    position: relative;
+    left: 100%;  
+    top: 100%;   
+  }
+  

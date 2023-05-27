@@ -1,0 +1,34 @@
+.gridMap {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+    height: calc(100vh - 100px);
+    border-radius: 10px;
+}
+  
+.grid {
+  display: grid;
+  grid-template-columns: repeat(300, 1fr);
+  grid-template-rows: repeat(216, 1fr);
+  gap: 1px;
+  width: 80vw;
+  height: 80vh;
+  background-color: #cccccc7c;
+  margin: auto;
+  border-radius: 10px;
+}
+
+.controls {
+  display: flex;
+  justify-content: center;
+  margin-top: 20px;
+}
+
+button {
+  margin: 0 10px;
+}
+
+.visitedCell {
+  background-color: white;
+}
