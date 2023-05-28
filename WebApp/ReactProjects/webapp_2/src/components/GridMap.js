@@ -3,9 +3,14 @@ import Bot from './Bot';
 import '../styles/GridMap.css';
 
 const GridMap = () => {
-    const [botPosition, setBotPosition] = useState({ x: 150, y: 108 }); // initial position
-    const [visitedPositions, setVisitedPositions] = useState([]);
-    const gridSize = { x: 300, y: 216 };
+  const gridSize = { x: 600, y: 432 };
+  const initialPosition = {
+    x: Math.ceil(gridSize.x / 2),
+    y: Math.ceil(gridSize.y / 2),
+  };
+
+  const [botPosition, setBotPosition] = useState(initialPosition);
+  const [visitedPositions, setVisitedPositions] = useState([]);
 
   const moveBot = (direction) => {
     switch (direction) {
@@ -32,9 +37,9 @@ const GridMap = () => {
       default:
         break;
     }
-    setVisitedPositions(prevPositions => [...prevPositions, botPosition]);
-  }
-  
+    setVisitedPositions((prevPositions) => [...prevPositions, botPosition]);
+  };
+
   return (
     <div className="gridMap">
       <div className="grid">
@@ -48,10 +53,10 @@ const GridMap = () => {
         ))}
       </div>
       <div className="controls">
-      <button onClick={() => moveBot('forward')}>Move Forward</button>
-      <button onClick={() => moveBot('backward')}>Move Backward</button>
-      <button onClick={() => moveBot('left')}>Turn Left</button>
-      <button onClick={() => moveBot('right')}>Turn Right</button>
+        <button onClick={() => moveBot('forward')}>Move Forward</button>
+        <button onClick={() => moveBot('backward')}>Move Backward</button>
+        <button onClick={() => moveBot('left')}>Turn Left</button>
+        <button onClick={() => moveBot('right')}>Turn Right</button>
       </div>
     </div>
   );

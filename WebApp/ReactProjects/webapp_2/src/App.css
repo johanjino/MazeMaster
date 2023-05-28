@@ -7,24 +7,32 @@
 body {
   font-family: Arial, sans-serif;
   background: #f4f4f4;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
 }
 
 .App {
   text-align: center;
   padding: 2rem 0;
-  max-width: 1200px;
-  margin: 0 auto;
+  max-width: 100vw;
+  height: 100vh;
   background-image: url('bg1.jpg');
-  background-size: cover; /* Cover the entire page */
-  background-position: center; /* Center the image */
-  background-repeat: no-repeat; /* Do not repeat the image */
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
 }
+
 h1 {
   text-align: center;
   padding: 20px;
-  font-family: 'Georgia', serif; /* Replace with your desired font */
+  font-family: 'Georgia', serif;
   font-weight: bold;
-  color: #ebebebd1; /* Replace with your desired color */
+  color: #ebebebd1;
 }
 
 button {
