@@ -11,6 +11,7 @@ const GridMap = () => {
 
   const [botPosition, setBotPosition] = useState(initialPosition);
   const [visitedPositions, setVisitedPositions] = useState([]);
+  
 
   const moveBot = (direction) => {
     switch (direction) {
