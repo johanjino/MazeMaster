@@ -1,0 +1,1 @@
+var reportPages = [["Summary","x2WControl_survey.html"],["Subsystem Report","x2WControl_subsystems.html"],["Code Interface Report","x2WControl_interface.html"]];
