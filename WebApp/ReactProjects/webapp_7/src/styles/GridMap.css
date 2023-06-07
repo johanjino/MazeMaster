@@ -1,0 +1,48 @@
+.gridMap {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+    height: calc(100vh - 100px);
+    border-radius: 10px;
+}
+  
+.grid {
+  display: grid;
+  grid-template-columns: repeat(600, 1fr);
+  grid-template-rows: repeat(432, 1fr);
+  gap: 0;
+  width: 80vw;
+  height: 80vh;
+  background-color: #cccccc60;
+  margin: auto;
+  border-radius: 10px; /* Add curved edges */
+  overflow: hidden; /* Clip content to fit within the curved edges */
+}
+
+
+.controls {
+  display: flex;
+  justify-content: center;
+  margin-top: 20px;
+}
+
+button {
+  margin: 0 10px;
+}
+
+
+.visitedCell {
+  background-color: white;
+  aspect-ratio: 1/1; /* Ensure the cells are square-shaped */
+}
+
+.visitedNode {
+  background-color: black;
+  width: 350%;
+  height: 350%;
+  border-radius: 100%;
+  
+
+}
+
