@@ -1,43 +1,99 @@
+////////////////////////////   INCLUDES   /////////////////////////////////
+#include <Arduino.h>
 #include <WiFi.h>
-#include <ESPAsyncWebServer.h>
+#include <HTTPClient.h>
+#include <ArduinoJson.h>
 
+////////////////////////////  INITIALIZATIONS  //////////////////////////// 
 const char* ssid = "NOWEARIH";
 const char* password = "IR1W7GzkXv4I";
-int port = 90;
+const char* serverURL = "http://192.168.0.22:8080/process";
 
-AsyncWebServer server(port);
+float test_array[4][4] = {
+  {NULL, 2.2, 3.3, 4.4},
+  {5.5, 6.6, 7.7, 8.8},
+  {9.9, 10.1, 11.2, 12.3},
+  {13.4, 14.5, NULL, 16}
+};
 
-void setup() {
-  Serial.begin(9600);
+#define SAMPLES 4
+#define DATA_ELEMENTS 7
+#define ACCEPTABLE_ERROR_PERCENTAGE 10
+
+float Image[4] = {};
+float Cam_Data[DATA_ELEMENTS] = {};
+float Curr_Data[DATA_ELEMENTS] = {};
+float Node_Data[4][4];
+static float Cam_Data_Buff[SAMPLES][DATA_ELEMENTS] = {};
+int image_number = 0;
+bool register_new_image = false;
+String response = "";
+
+enum possible_states {taking_images, done_taking_images, go_forward, at_junction, take_turn};
+possible_states bot_state;
+
+////////////////////////////   FUNCTIONS   ////////////////////////////
+
+void connect_WiFi() {
   WiFi.begin(ssid, password);
-
   while (WiFi.status() != WL_CONNECTED) {
     delay(1000);
     Serial.println("Connecting to WiFi...");
   }
   Serial.println("Connected to WiFi");
-
-  Serial.print("IP Address: ");
-  Serial.println(WiFi.localIP());
-  Serial.print("Port Number: ");
-  Serial.println(port);
-
-  server.on("/post", HTTP_POST, [](AsyncWebServerRequest *request){
-    int params = request->params();
-    String message;
-    for(int i=0;i<params;i++){
-      AsyncWebParameter* p = request->getParam(i);
-      if(p->isPost()){
-        message += p->value();
-      }
-    }
-    if (message){
-      Serial.println(message);
-    }
-    request->send(200, "text/plain", String(message.length()));
-  });
-
-  server.begin();
 }
 
-void loop() {}
+String send_and_receive(float Node_Data[4][4]) {
+  HTTPClient http;
+
+  http.begin(serverURL);
+  http.addHeader("Content-Type", "application/json");
+
+  const int rows = 4;
+  const int cols = 4;
+  StaticJsonDocument<1024> jsonDocument;
+  JsonArray jsonArray = jsonDocument.to<JsonArray>();
+
+  for (int i = 0; i < rows; i++) {
+    JsonArray rowArray = jsonArray.createNestedArray();
+    for (int j = 0; j < cols; j++) {
+      rowArray.add(Node_Data[i][j]);
+    }
+  }
+
+  String payload;
+  serializeJson(jsonArray, payload);
+
+  int httpResponseCode = http.POST(payload);
+
+  if (httpResponseCode > 0) {
+    String response = http.getString();
+    return response;
+  }
+  else{
+    return "Sending to server is unsuccessful :(";
+  }
+
+  http.end();
+}
+
+
+
+
+
+void setup() {
+  Serial.begin(9600);
+  delay(100);
+  connect_WiFi();
+}
+
+void loop() {
+
+  if (Serial.available() > 0) {
+    if (Serial.read() == '1') {
+    response = send_and_receive(test_array);
+    Serial.print(response);
+    }
+  }
+
+}
