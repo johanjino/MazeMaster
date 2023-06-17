@@ -35,6 +35,7 @@ button {
 
 
 .visitedCell {
+  width: 2px;
   background-color: white;
   aspect-ratio: 1/1; /* Ensure the cells are square-shaped */
 }
