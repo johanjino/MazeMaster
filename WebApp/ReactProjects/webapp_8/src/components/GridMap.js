@@ -3,22 +3,22 @@ import Bot from './Bot';
 import '../styles/GridMap.css';
 import io from 'socket.io-client'; // Import the socket.io-client library
 
-const socket = io('http://localhost:5000'); // Replace with your server URL
+const gridSize = { x: 600, y: 432 };
+const initialPosition = {
+  x: Math.ceil(gridSize.x / 2),
+  y: Math.ceil(gridSize.y / 2),
+};
 
 const GridMap = () => {
-  const gridSize = { x: 600, y: 432 };
-  const initialPosition = {
-    x: Math.ceil(gridSize.x / 2),
-    y: Math.ceil(gridSize.y / 2),
-  };
-
+  const getCurrPos = (x) => x[x.length - 1]
   const [visitedPositions, setVisitedPositions] = useState([initialPosition]);
   const [visitedNodes, setVisitedNodes] = useState([]);
-  const currentPosition = visitedPositions[visitedPositions.length - 1] 
+  const [toggleSocket, setToggleSocket] = useState(false);
 
 
-  useEffect(() => {
-    console.log("Setting up socket")
+
+  const handleButtonClick = () => {
+    const socket = io('http://localhost:5000'); // Replace with your server URL
     const handleNewMessage = (message) => {
       console.log(message)
         switch (message) {
@@ -35,7 +35,8 @@ const GridMap = () => {
           moveBot('right');
           break;
         case 's':
-          setVisitedNodes((prevNodes) => [...prevNodes, currentPosition]);
+          // moveBot('setNode');
+          setVisitedNodes((prevNodes) => [...prevNodes, getCurrPos(visitedPositions)]);
           break;
         default:
           break;
@@ -45,8 +46,41 @@ const GridMap = () => {
     socket.on('message', handleNewMessage);
 
     return () => {
-      socket.off('turn socketg off', handleNewMessage); // Disconnect the socket when the component is unmounted
+      socket.off('turn socket off', handleNewMessage); // Disconnect the socket when the component is unmounted
     };
+  }
+
+  useEffect(() => {
+    // console.log("Setting up socket")
+    // console.log(visitedPositions)
+    // const handleNewMessage = (message) => {
+    //   console.log(message)
+    //     switch (message) {
+    //     case '1':
+    //       moveBot('forward');
+    //       break;
+    //     case '2':
+    //       moveBot('backward');
+    //       break;
+    //     case '3':
+    //       moveBot('left');
+    //       break;
+    //     case '4':
+    //       moveBot('right');
+    //       break;
+    //     case 's':
+    //       setVisitedNodes((prevNodes) => [...prevNodes, currentPosition]);
+    //       break;
+    //     default:
+    //       break;
+    //   }
+    // }
+
+    // socket.on('message', handleNewMessage);
+
+    // return () => {
+    //   socket.off('turn socketg off', handleNewMessage); // Disconnect the socket when the component is unmounted
+    // };
   }, []);
 
   // useEffect(() => {
@@ -116,7 +150,7 @@ const GridMap = () => {
   return (
     <div className="gridMap">
       <div className="grid">
-        <Bot position={currentPosition} />
+        <Bot position={getCurrPos(visitedPositions)} />
         {visitedPositions.map((position, index) => (
           <div
             key={index}
@@ -133,6 +167,7 @@ const GridMap = () => {
         ))}
       </div>
       <div className="controls">{/* Remove the button elements */}</div>
+      <button onClick={handleButtonClick}>Click me!</button>
     </div>
   );
 };
