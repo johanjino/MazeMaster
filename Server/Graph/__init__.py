@@ -1,5 +1,6 @@
 import numpy as np
 from Graph.graph_class import Graph
+import sys
 
 def find_angle(angle, node: Graph):
     #ToDo
@@ -30,7 +31,7 @@ def determine_direction(node: Graph, stack: list, visited: list):
     # if node in visited and node != visited[stack[-1][0]] : This case will not be entered in this function
 
     angle = -1
-
+    print(visited_edges, file=sys.stderr)
     for i in edges:
         if i not in visited_edges:
             angle = i
@@ -56,9 +57,11 @@ def weighted_euclidean_distance(list1, list2, weights):
     return np.sqrt(sum(squared_distances))
 
 def calculate_confidence(list1, list2, weights):
+    if sum(list1)==0 or sum(list2)==0:
+        return 0
     distance = weighted_euclidean_distance(list1, list2, weights)
-    max_distance = np.sqrt(sum([(w * max(list1[i], list2[i]))**2 for i, w in enumerate(weights)]))
-    confidence = 100 - (distance / max_distance) * 100
+    tuneable_parameter = 30
+    confidence = np.exp(((-distance)/tuneable_parameter)) * 100
     return confidence
 
 def calc_top_4(top_4, value):
@@ -87,15 +90,16 @@ def check_node(data, visited_nodes: list[Graph]):
         top_4 = []
         for property in node.property:
             for image in data:
-                conf = calculate_confidence(image, property, [0.5,0.5,0.5,0.5])
+                conf = calculate_confidence(image, property, [0.25,0.25,0.25,0.25])
                 top_4 = calc_top_4(top_4, conf)
 
         final_conf = sum(top_4)/4
+        print(final_conf, file=sys.stderr)
         if final_conf>best_conf:
             best_conf = final_conf
             best_match = node
     
-    if best_conf<70:
+    if best_conf<50:
         return -1
     return visited_nodes.index(best_match)
 
