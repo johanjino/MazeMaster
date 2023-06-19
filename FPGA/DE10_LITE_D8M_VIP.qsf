@@ -411,7 +411,7 @@ set_global_assignment -name FITTER_EFFORT "STANDARD FIT"
 set_global_assignment -name VERILOG_FILE FpsMonitor.v
 set_global_assignment -name QSYS_FILE Qsys.qsys
 set_global_assignment -name SDC_FILE DE10_LITE_D8M_VIP.SDC
-set_global_assignment -name TIMEQUEST_MULTICORNER_ANALYSIS ON
+set_global_assignment -name TIMING_ANALYZER_MULTICORNER_ANALYSIS ON
 set_global_assignment -name PROJECT_OUTPUT_DIRECTORY output_files
 set_global_assignment -name VERILOG_FILE ip/EEE_IMGPROC/STREAM_REG.v
 set_global_assignment -name VECTOR_WAVEFORM_FILE ip/EEE_IMGPROC/STREAM_REG_TEST.vwf
@@ -425,4 +425,16 @@ set_global_assignment -name VERILOG_FILE ip/EEE_IMGPROC/EEE_IMGPROC.v
 set_global_assignment -name CDF_FILE Chain.cdf
 set_global_assignment -name SEARCH_PATH ip/EEE_IMGPROC
 set_global_assignment -name SYSTEMVERILOG_FILE ip/EEE_IMGPROC/SOBEL_FILTER.sv
+set_global_assignment -name SYSTEMVERILOG_FILE ip/EEE_IMGPROC/LANE_DETECTION.sv
+set_global_assignment -name VERILOG_INPUT_VERSION SYSTEMVERILOG_2005
+set_global_assignment -name VERILOG_SHOW_LMF_MAPPING_MESSAGES OFF
+set_global_assignment -name ENABLE_OCT_DONE OFF
+set_global_assignment -name EXTERNAL_FLASH_FALLBACK_ADDRESS 00000000
+set_global_assignment -name USE_CONFIGURATION_DEVICE OFF
+set_global_assignment -name INTERNAL_FLASH_UPDATE_MODE "SINGLE COMP IMAGE WITH ERAM"
+set_global_assignment -name CRC_ERROR_OPEN_DRAIN OFF
+set_global_assignment -name OUTPUT_IO_TIMING_NEAR_END_VMEAS "HALF VCCIO" -rise
+set_global_assignment -name OUTPUT_IO_TIMING_NEAR_END_VMEAS "HALF VCCIO" -fall
+set_global_assignment -name OUTPUT_IO_TIMING_FAR_END_VMEAS "HALF SIGNAL SWING" -rise
+set_global_assignment -name OUTPUT_IO_TIMING_FAR_END_VMEAS "HALF SIGNAL SWING" -fall
 set_instance_assignment -name PARTITION_HIERARCHY root_partition -to | -section_id Top
