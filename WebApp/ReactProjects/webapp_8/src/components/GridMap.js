@@ -3,93 +3,154 @@ import Bot from './Bot';
 import '../styles/GridMap.css';
 import io from 'socket.io-client'; // Import the socket.io-client library
 
-const socket = io('http://localhost:5000'); // Replace with your server URL
+const gridSize = { x: 600, y: 432 };
+const initialPosition = {
+  x: Math.ceil(gridSize.x / 2),
+  y: Math.ceil(gridSize.y / 2),
+};
 
 const GridMap = () => {
-  const gridSize = { x: 600, y: 432 };
-  const initialPosition = {
-    x: Math.ceil(gridSize.x / 2),
-    y: Math.ceil(gridSize.y / 2),
-  };
-
-  const [botPosition, setBotPosition] = useState(initialPosition);
-  const [visitedPositions, setVisitedPositions] = useState([]);
+  const getCurrPos = (x) => x[x.length - 1]
+  const [visitedPositions, setVisitedPositions] = useState([initialPosition]);
   const [visitedNodes, setVisitedNodes] = useState([]);
-  const [messages, setMessages] = useState([]); // State to store the received messages
+  const [toggleSocket, setToggleSocket] = useState(false);
 
-  useEffect(() => {
-    socket.on('message', (message) => {
-      setMessages((prevMessages) => [...prevMessages, message]); // Update the messages state with received message
-    });
 
-    return () => {
-      socket.disconnect(); // Disconnect the socket when the component is unmounted
-    };
-  }, []);
 
-  useEffect(() => {
-    const handleKeyDown = (event) => {
-      const input = event.key;
-
-      switch (input) {
-        case 'ArrowUp':
+  const handleButtonClick = () => {
+    const socket = io('http://localhost:5000'); // Replace with your server URL
+    const handleNewMessage = (message) => {
+      console.log(message)
+        switch (message) {
+        case '1':
           moveBot('forward');
           break;
-        case 'ArrowDown':
+        case '2':
           moveBot('backward');
           break;
-        case 'ArrowLeft':
+        case '3':
           moveBot('left');
           break;
-        case 'ArrowRight':
+        case '4':
           moveBot('right');
           break;
         case 's':
-          setVisitedNodes((prevNodes) => [...prevNodes, botPosition]);
+          // moveBot('setNode');
+          setVisitedNodes((prevNodes) => [...prevNodes, getCurrPos(visitedPositions)]);
           break;
         default:
           break;
       }
-    };
+    }
 
-    window.addEventListener('keydown', handleKeyDown);
+    socket.on('message', handleNewMessage);
+
     return () => {
-      window.removeEventListener('keydown', handleKeyDown);
+      socket.off('turn socket off', handleNewMessage); // Disconnect the socket when the component is unmounted
     };
-  }, [botPosition]);
+  }
+
+  useEffect(() => {
+    // console.log("Setting up socket")
+    // console.log(visitedPositions)
+    // const handleNewMessage = (message) => {
+    //   console.log(message)
+    //     switch (message) {
+    //     case '1':
+    //       moveBot('forward');
+    //       break;
+    //     case '2':
+    //       moveBot('backward');
+    //       break;
+    //     case '3':
+    //       moveBot('left');
+    //       break;
+    //     case '4':
+    //       moveBot('right');
+    //       break;
+    //     case 's':
+    //       setVisitedNodes((prevNodes) => [...prevNodes, currentPosition]);
+    //       break;
+    //     default:
+    //       break;
+    //   }
+    // }
+
+    // socket.on('message', handleNewMessage);
+
+    // return () => {
+    //   socket.off('turn socketg off', handleNewMessage); // Disconnect the socket when the component is unmounted
+    // };
+  }, []);
+
+  // useEffect(() => {
+  //   const handleKeyDown = (event) => {
+  //     const input = event.key;
+
+  //     switch (input) {
+  //       case 'ArrowUp':
+  //         moveBot('forward');
+  //         break;
+  //       case 'ArrowDown':
+  //         moveBot('backward');
+  //         break;
+  //       case 'ArrowLeft':
+  //         moveBot('left');
+  //         break;
+  //       case 'ArrowRight':
+  //         moveBot('right');
+  //         break;
+  //       case 's':
+  //         setVisitedNodes((prevNodes) => [...prevNodes, currentPosition]);
+  //         break;
+  //       default:
+  //         break;
+  //     }
+  //   };
+
+  //   window.addEventListener('keydown', handleKeyDown);
+  //   return () => {
+  //     window.removeEventListener('keydown', handleKeyDown);
+  //   };
+  // }, []);
 
   const moveBot = (direction) => {
-    switch (direction) {
-      case 'forward':
-        if (botPosition.y > 1) {
-          setBotPosition((prevPosition) => ({ ...prevPosition, y: prevPosition.y - 1 }));
+    setVisitedPositions((prevPositions) => {
+      const previousPosition = prevPositions[prevPositions.length - 1]
+      let newPosition
+      switch (direction) {
+          case 'forward':
+            if (previousPosition.y > 1) {
+              newPosition = { ...previousPosition, y: previousPosition.y - 1 }
+            }
+            break;
+          case 'backward':
+            if (previousPosition.y < gridSize.y) {
+              newPosition = { ...previousPosition, y: previousPosition.y + 1 }
+            }
+            break;
+          case 'left':
+            if (previousPosition.x > 1) {
+              newPosition = { ...previousPosition, x: previousPosition.x - 1 }
+            }
+            break;
+          case 'right':
+            if (previousPosition.x < gridSize.x) {
+              newPosition = { ...previousPosition, x: previousPosition.x + 1 }
+            }
+            break;
+          default:
+            newPosition = previousPosition
+            break;
         }
-        break;
-      case 'backward':
-        if (botPosition.y < gridSize.y) {
-          setBotPosition((prevPosition) => ({ ...prevPosition, y: prevPosition.y + 1 }));
-        }
-        break;
-      case 'left':
-        if (botPosition.x > 1) {
-          setBotPosition((prevPosition) => ({ ...prevPosition, x: prevPosition.x - 1 }));
-        }
-        break;
-      case 'right':
-        if (botPosition.x < gridSize.x) {
-          setBotPosition((prevPosition) => ({ ...prevPosition, x: prevPosition.x + 1 }));
-        }
-        break;
-      default:
-        break;
-    }
-    setVisitedPositions((prevPositions) => [...prevPositions, botPosition]);
+      return [...prevPositions, newPosition]
+    });
   };
 
   return (
     <div className="gridMap">
       <div className="grid">
-        <Bot position={botPosition} />
+        <Bot position={getCurrPos(visitedPositions)} />
         {visitedPositions.map((position, index) => (
           <div
             key={index}
@@ -104,18 +165,12 @@ const GridMap = () => {
             style={{ gridRowStart: node.y, gridColumnStart: node.x, transform: 'translate(-35%, -35%)' }}
           />
         ))}
-        {messages.map((message, index) => (
-          <div key={index} className="message">
-            {message}
-          </div>
-        ))}
       </div>
       <div className="controls">{/* Remove the button elements */}</div>
+      <button onClick={handleButtonClick}>Click me!</button>
     </div>
   );
 };
 
 export default GridMap;
-
-
 
