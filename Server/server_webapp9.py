@@ -24,7 +24,6 @@ def handle_stream_start():
         socketio.emit('message', message)
         socketio.sleep(0.25)  # Wait for 1 second before sending the next message
 
-if __name__ == '__main__':
+if __name__ == '__main__':   
     socketio.run(app)
-
 #/usr/local/opt/python@3.10/bin/python3.10 /Users/anadimoska/Desktop/mazemaster/python_server/server_app8.py
