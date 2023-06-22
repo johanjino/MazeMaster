@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useLayoutEffect } from 'react';
 import Bot from './Bot';
 import '../styles/GridMap.css';
 import io from 'socket.io-client'; // Import the socket.io-client library
 
+const socket = io('http://localhost:5000'); // Replace with your server URL
 const gridSize = { x: 600, y: 432 };
 const initialPosition = {
   x: Math.ceil(gridSize.x / 2),
@@ -13,25 +14,20 @@ const GridMap = () => {
   const getCurrPos = (x) => x[x.length - 1]
   const [visitedPositions, setVisitedPositions] = useState([initialPosition]);
   const [visitedNodes, setVisitedNodes] = useState([]);
-  const [toggleSocket, setToggleSocket] = useState(false);
 
-
-
-  const handleButtonClick = () => {
-    const socket = io('http://localhost:5000'); // Replace with your server URL
+  useEffect(() => {
     const handleNewMessage = (message) => {
-      console.log(message)
-        switch (message) {
+      switch (message) {
         case '1':
           moveBot('forward');
           break;
-        case '2':
+        case '4':
           moveBot('backward');
           break;
         case '3':
           moveBot('left');
           break;
-        case '4':
+        case '2':
           moveBot('right');
           break;
         case '5':
@@ -46,73 +42,13 @@ const GridMap = () => {
     socket.on('message', handleNewMessage);
 
     return () => {
-      socket.off('turn socket off', handleNewMessage); // Disconnect the socket when the component is unmounted
+      socket.off('message', handleNewMessage); // Disconnect the socket when the component is unmounted
     };
-  }
+  })
 
-  useEffect(() => {
-    // console.log("Setting up socket")
-    // console.log(visitedPositions)
-    // const handleNewMessage = (message) => {
-    //   console.log(message)
-    //     switch (message) {
-    //     case '1':
-    //       moveBot('forward');
-    //       break;
-    //     case '2':
-    //       moveBot('backward');
-    //       break;
-    //     case '3':
-    //       moveBot('left');
-    //       break;
-    //     case '4':
-    //       moveBot('right');
-    //       break;
-    //     case 's':
-    //       setVisitedNodes((prevNodes) => [...prevNodes, currentPosition]);
-    //       break;
-    //     default:
-    //       break;
-    //   }
-    // }
-
-    // socket.on('message', handleNewMessage);
-
-    // return () => {
-    //   socket.off('turn socketg off', handleNewMessage); // Disconnect the socket when the component is unmounted
-    // };
-  }, []);
-
-  // useEffect(() => {
-  //   const handleKeyDown = (event) => {
-  //     const input = event.key;
-
-  //     switch (input) {
-  //       case 'ArrowUp':
-  //         moveBot('forward');
-  //         break;
-  //       case 'ArrowDown':
-  //         moveBot('backward');
-  //         break;
-  //       case 'ArrowLeft':
-  //         moveBot('left');
-  //         break;
-  //       case 'ArrowRight':
-  //         moveBot('right');
-  //         break;
-  //       case 's':
-  //         setVisitedNodes((prevNodes) => [...prevNodes, currentPosition]);
-  //         break;
-  //       default:
-  //         break;
-  //     }
-  //   };
-
-  //   window.addEventListener('keydown', handleKeyDown);
-  //   return () => {
-  //     window.removeEventListener('keydown', handleKeyDown);
-  //   };
-  // }, []);
+  useLayoutEffect(() => {
+    socket.emit('start')
+  }, [])
 
   const moveBot = (direction) => {
     setVisitedPositions((prevPositions) => {
@@ -167,10 +103,13 @@ const GridMap = () => {
         ))}
       </div>
       <div className="controls">{/* Remove the button elements */}</div>
-      <button onClick={handleButtonClick}>Click me!</button>
     </div>
   );
 };
 
 export default GridMap;
+
+
+
+
 
