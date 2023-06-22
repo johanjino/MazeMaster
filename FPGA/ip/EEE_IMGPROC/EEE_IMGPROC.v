@@ -71,17 +71,26 @@ parameter BB_COL_DEFAULT = 24'h00ff00;
 
 
 wire [7:0]   red, green, blue, grey;
+
 wire [7:0]   red_out, green_out, blue_out;
 
 wire         sop, eop, in_valid, out_ready;
 ////////////////////////////////////////////////////////////////////////
 
-// Detect red areas
+
+// Detect colours
 wire red_detect, yellow_detect, blue_detect, white_detect;
-assign 	red_detect 		= red[7] & ~green[7] & ~blue[7];
-assign 	yellow_detect 	= red[7] & green[7] & ~blue[7];
-assign 	blue_detect 	= ~red[7] & ~green[7] & blue[7];
-assign 	white_detect 	= red[7] & green[7] & blue[7];
+
+COLOUR_DETECT	Colout_detect_inst (
+	.red (red),
+	.green (green),
+	.blue (blue),
+	.red_detect (red_detect),
+	.yellow_detect (yellow_detect),
+	.blue_detect (blue_detect),
+	);
+
+assign white_detect 	= red[7] & green[7] & blue[7];
 
 // Find boundary of cursor box
 
@@ -293,7 +302,7 @@ always@(posedge clk) begin
 	end
 	
 	//Cycle through message writer states once started
-	if (msg_state == 4'b1110) msg_state <= 4'b00; 	// max state used reached. Reset here
+	if (msg_state == 4'b1010) msg_state <= 4'b00; 	// max state used reached. Reset here
 	else if (msg_state != 4'b00) msg_state <= msg_state + 4'b01;
 
 end
@@ -310,6 +319,48 @@ wire msg_buf_empty;
 `define YELLOW_BOX_MSG_ID 	"YBB"
 `define BLUE_BOX_MSG_ID 	"BBB"
 
+//Calculate Area
+wire [31:0] area_red, area_yellow, area_blue;
+AREA	Area_red (
+	.x_min (left_red),
+	.x_max (right_red),
+	.y_min (top_red),
+	.y_max (bottom_red),
+	.area (area_red),
+	);
+AREA	Area_yellow (
+	.x_min (left_yellow),
+	.x_max (right_yellow),
+	.y_min (top_yellow),
+	.y_max (bottom_yellow),
+	.area (area_yellow),
+	);
+AREA	Area_blue (
+	.x_min (left_blue),
+	.x_max (right_blue),
+	.y_min (top_blue),
+	.y_max (bottom_blue),
+	.area (area_blue),
+	);
+
+//Calculate Lane Values
+wire [31:0] lane_offset, l_turn, r_turn, forward;
+LANE	lane_calculation (
+	.r_x_min (left_lane_right),
+	.r_x_max (right_lane_right),
+	.r_y_min (top_lane_right),
+	.r_y_max (bottom_lane_right),
+	.l_x_min (left_lane_left),
+	.l_x_max (right_lane_left),
+	.l_y_min (top_lane_left),
+	.l_y_max (bottom_lane_left),
+	.offset (lane_offset),
+	.left (l_turn),
+	.right (r_turn),
+	.forward (forward)
+	);
+
+
 always@(*) begin	//Write words to FIFO as state machine advances
 	case(msg_state)
 		4'b0000: begin
@@ -321,47 +372,49 @@ always@(*) begin	//Write words to FIFO as state machine advances
 			msg_buf_wr = 1'b1;
 		end
 		4'b0010: begin
-			msg_buf_in = {5'b0, x_min_red, 5'b0, y_min_red};	//Top left coordinate
+			msg_buf_in = {area_red};	//Area red
 			msg_buf_wr = 1'b1;
 		end
 		4'b0011: begin
-			msg_buf_in = {5'b0, x_max_red, 5'b0, y_max_red}; //Bottom right coordinate
+			msg_buf_in = {area_yellow}; //Area yellow
 			msg_buf_wr = 1'b1;
 		end
-		
 		4'b0100: begin
-			msg_buf_in = 32'b0;
-			msg_buf_wr = 1'b0;
-		end
-		4'b0101: begin
-			msg_buf_in = `YELLOW_BOX_MSG_ID;	//Message ID
+			msg_buf_in = {area_blue}; //Area blue
 			msg_buf_wr = 1'b1;
 		end
-		4'b0110: begin
-			msg_buf_in = {5'b0, x_min_yellow, 5'b0, y_min_yellow};	//Top left coordinate
+
+		4'b0101: begin
+			msg_buf_in = {lane_offset};	//Lane offset
+			msg_buf_wr = 1'b1;
+		end
+
+		 4'b0110: begin
+		 	msg_buf_in = {r_turn};	//right turn
 			msg_buf_wr = 1'b1;
 		end
 		4'b0111: begin
-			msg_buf_in = {5'b0, x_max_yellow, 5'b0, y_max_yellow}; //Bottom right coordinate
+			msg_buf_in = {l_turn};	//left turn
 			msg_buf_wr = 1'b1;
 		end
 		
 		4'b1000: begin
+			msg_buf_in = {forward};	//End of road
+			msg_buf_wr = 1'b1;
+		end
+		4'b1001: begin
 			msg_buf_in = 32'b0;
 			msg_buf_wr = 1'b0;
 		end
-		4'b1001: begin
-			msg_buf_in = `BLUE_BOX_MSG_ID;	//Message ID
-			msg_buf_wr = 1'b1;
-		end
-		4'b1010: begin
-			msg_buf_in = {5'b0, x_min_blue, 5'b0, y_min_blue};	//Top left coordinate
-			msg_buf_wr = 1'b1;
-		end
-		4'b1011: begin
-			msg_buf_in = {5'b0, x_max_blue, 5'b0, y_max_blue}; //Bottom right coordinate
-			msg_buf_wr = 1'b1;
-		end
+
+		// 4'b1010: begin
+		// 	msg_buf_in = {5'b0, x_min_blue, 5'b0, y_min_blue};	//Top left coordinate
+		// 	msg_buf_wr = 1'b1;
+		// end
+		// 4'b1011: begin
+		// 	msg_buf_in = {5'b0, x_max_blue, 5'b0, y_max_blue}; //Bottom right coordinate
+		// 	msg_buf_wr = 1'b1;
+		// end
 		// 4'b1100: begin
 		// 	msg_buf_in = {32'hFFFFFFFF}; //Lane Detection Output
 		// 	msg_buf_wr = 1'b1;

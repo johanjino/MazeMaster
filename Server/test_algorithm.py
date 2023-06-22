@@ -2,7 +2,7 @@ import requests
 import json
 
 # Set the URL of the server
-url = "http://192.168.43.45:8080/process"
+url = "http://146.169.169.141:8080/process"
 
 while True:
     # Get the list input from the user
@@ -15,7 +15,7 @@ while True:
     json_payload = json.dumps(payload)
 
     # Send a POST request to the server
-    response = requests.post(url, data=json_payload)
+    response = requests.post(url, json=json_payload)
 
     # Check the response status code
     if response.status_code == 200:

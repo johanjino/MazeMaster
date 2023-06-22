@@ -32,34 +32,34 @@ module EEE_IMGPROC(
 
 
 // global clock & reset
-input	clk;
-input	reset_n;
+input							clk;
+input							reset_n;
 
 // mm slave
 input							s_chipselect;
 input							s_read;
 input							s_write;
-output	reg	[31:0]	s_readdata;
-input	[31:0]				s_writedata;
-input	[2:0]					s_address;
+output reg		[31:0]			s_readdata;
+input			[31:0]			s_writedata;
+input			[2:0]			s_address;
 
 
 // streaming sink
-input	[23:0]            	sink_data;
-input								sink_valid;
+input			[23:0]          sink_data;
+input							sink_valid;
 output							sink_ready;
-input								sink_sop;
-input								sink_eop;
+input							sink_sop;
+input							sink_eop;
 
 // streaming source
-output	[23:0]			  	   source_data;
-output								source_valid;
-input									source_ready;
-output								source_sop;
-output								source_eop;
+output			[23:0]			source_data;
+output							source_valid;
+input							source_ready;
+output							source_sop;
+output							source_eop;
 
 // conduit export
-input                         mode;
+input                         	mode;
 
 ////////////////////////////////////////////////////////////////////////
 //
@@ -71,16 +71,26 @@ parameter BB_COL_DEFAULT = 24'h00ff00;
 
 
 wire [7:0]   red, green, blue, grey;
+
 wire [7:0]   red_out, green_out, blue_out;
 
 wire         sop, eop, in_valid, out_ready;
 ////////////////////////////////////////////////////////////////////////
 
-// Detect red areas
-wire red_detect, yellow_detect, blue_detect;
-assign red_detect = red[7] & ~green[7] & ~blue[7];
-assign yellow_detect = red[7] & green[7] & ~blue[7];
-assign blue_detect = ~red[7] & ~green[7] & blue[7];
+
+// Detect colours
+wire red_detect, yellow_detect, blue_detect, white_detect;
+
+COLOUR_DETECT	Colout_detect_inst (
+	.red (red),
+	.green (green),
+	.blue (blue),
+	.red_detect (red_detect),
+	.yellow_detect (yellow_detect),
+	.blue_detect (blue_detect),
+	);
+
+assign white_detect 	= red[7] & green[7] & blue[7];
 
 // Find boundary of cursor box
 
@@ -88,12 +98,18 @@ assign blue_detect = ~red[7] & ~green[7] & blue[7];
 
 // Highlight detected areas & Show bounding box
 reg [23:0] new_image;
-wire bb_active_red, bb_active_yellow, bb_active_blue;
+wire bb_active_red, bb_active_yellow, bb_active_blue, bb_active_white;
 
-assign bb_active_red = 	(x == left_red) | (x == right_red) | (y == top_red) | (y == bottom_red);
-assign bb_active_yellow =	(x == left_yellow) | (x == right_yellow) | (y == top_yellow) | (y == bottom_yellow);
-assign bb_active_blue =	(x == left_blue) | (x == right_blue) | (y == top_blue) | (y == bottom_blue);
-
+assign bb_active_red = 	((x > left_red) & (x < right_red) & ((y == top_red) | (y == bottom_red))) | 
+						((y > top_red) & (y < bottom_red) & ((x == left_red) | (x == right_red)));
+assign bb_active_yellow =	((x > left_yellow) & (x < right_yellow) & ((y == top_yellow) | (y == bottom_yellow))) | 
+							((y > top_yellow) & (y < bottom_yellow) & ((x == left_yellow) | (x == right_yellow)));
+assign bb_active_blue =	((x > left_blue) & (x < right_blue) & ((y == top_blue) | (y == bottom_blue))) |
+						((y > top_blue) & (y < bottom_blue) & ((x == left_blue) | (x == right_blue)));
+assign bb_active_white = ((x > left_lane_left) & (x < right_lane_left) & ((y == top_lane_left) | (y == bottom_lane_left))) |
+						((y > top_lane_left) & (y < bottom_lane_left) & ((x == left_lane_left) | (x == right_lane_left))) |
+						((x > left_lane_right) & (x < right_lane_right) & ((y == top_lane_right) | (y == bottom_lane_right))) |
+						((y > top_lane_right) & (y < bottom_lane_right) & ((x == left_lane_right) | (x == right_lane_right)));
 assign grey = green[7:1] + red[7:2] + blue[7:2]; //Grey = green/2 + red/4 + blue/4
 
 
@@ -106,19 +122,34 @@ always @ (posedge clk) begin
 			new_image = 24'hffffe0;
 		end 
 		else begin
-			if (red_detect) begin
-				new_image = {8'hff, 8'h0, 8'h0};
-			end
+			if  (bb_active_blue) begin
+					new_image = 24'hadd8e6;
+				end 
 			else begin
-				if (yellow_detect) begin
-					new_image = {8'hff, 8'hff, 8'h0};
+				if (bb_active_white) begin
+					new_image = 24'hffffff;
 				end
 				else begin
-					if (blue_detect) begin
-						new_image = {8'h00, 8'h00, 8'hff}; 
+					if (red_detect && y<240) begin
+						new_image = {8'hff, 8'h0, 8'h0};
 					end
 					else begin
-						new_image = {grey, grey, grey};
+						if (yellow_detect && y<240) begin
+							new_image = {8'hff, 8'hff, 8'h0};
+						end
+						else begin
+							if (blue_detect && y<240) begin
+								new_image = {8'h00, 8'h00, 8'hff}; 
+							end
+							else begin
+								if (white_detect && x<320 && y>240) begin
+									new_image = {8'hff, 8'hff, 8'hff};
+								end
+								else begin
+									new_image = {grey, grey, grey};
+								end
+							end
+						end
 					end
 				end
 			end
@@ -157,29 +188,42 @@ end
 reg [10:0] x_min_red, y_min_red, x_max_red, y_max_red;
 reg [10:0] x_min_yellow, y_min_yellow, x_max_yellow, y_max_yellow;
 reg [10:0] x_min_blue, y_min_blue, x_max_blue, y_max_blue;
+reg [10:0] x_min_lane_left, y_min_lane_left, x_max_lane_left, y_max_lane_left;
+reg [10:0] x_min_lane_right, y_min_lane_right, x_max_lane_right, y_max_lane_right;
 always@(posedge clk) begin
-	if (red_detect & in_valid) begin	//Update bounds when the pixel is red
+	if (red_detect & in_valid && y<240) begin	//Update bounds when the pixel is red
 		if (x < x_min_red) x_min_red <= x;
 		if (x > x_max_red) x_max_red <= x;
 		if (y < y_min_red) y_min_red <= y;
 		y_max_red <= y;
 	end
-	else begin
-		if (yellow_detect & in_valid) begin	//Update bounds when the pixel is red
-			if (x < x_min_yellow) x_min_yellow <= x;
-			if (x > x_max_yellow) x_max_yellow <= x;
-			if (y < y_min_yellow) y_min_yellow <= y;
-			y_max_yellow <= y;
-		end
-		else begin
-			if (blue_detect & in_valid) begin	//Update bounds when the pixel is red
-				if (x < x_min_blue) x_min_blue <= x;
-				if (x > x_max_blue) x_max_blue <= x;
-				if (y < y_min_blue) y_min_blue <= y;
-				y_max_blue <= y;
-			end
-		end
+	else if (yellow_detect & in_valid && y<240) begin 	//Update bounds when the pixel is red
+		if (x < x_min_yellow) x_min_yellow <= x;
+		if (x > x_max_yellow) x_max_yellow <= x;
+		if (y < y_min_yellow) y_min_yellow <= y;
+		y_max_yellow <= y;
 	end
+	else if (blue_detect & in_valid && y<240) begin		//Update bounds when the pixel is red
+		if (x < x_min_blue) x_min_blue <= x;
+		if (x > x_max_blue) x_max_blue <= x;
+		if (y < y_min_blue) y_min_blue <= y;
+		y_max_blue <= y;
+	end
+	else if (white_detect & in_valid && x<320 && y>240 && ((y-y_max_lane_left)<11'd10 || y_max_lane_left==0)) begin 	//Update bounds when left lane
+		if (x < x_min_lane_left) x_min_lane_left <= x;
+		if (x > x_max_lane_left) x_max_lane_left <= x;
+		if (y < y_min_lane_left) y_min_lane_left <= y;
+		y_max_lane_left <= y;
+			
+	end
+	else if (white_detect & in_valid && x>320 && y>240) begin 	//Update bounds when left lane
+		if (x < x_min_lane_right) x_min_lane_right <= x;
+		if (x > x_max_lane_right) x_max_lane_right <= x;
+		if (y < y_min_lane_right) y_min_lane_right <= y;
+		y_max_lane_right <= y;
+			
+	end
+
 
 	if (sop & in_valid) begin	//Reset bounds on start of packet
 		x_min_red <= IMAGE_W-11'h1;
@@ -196,15 +240,27 @@ always@(posedge clk) begin
 		x_max_blue <= 0;
 		y_min_blue <= IMAGE_H-11'h1;
 		y_max_blue <= 0;
+
+		x_min_lane_left <= IMAGE_W-11'h1;
+		x_max_lane_left <= 0;
+		y_min_lane_left <= IMAGE_H-11'h1;
+		y_max_lane_left <= 0;
+
+		x_min_lane_right <= IMAGE_W-11'h1;
+		x_max_lane_right <= 0;
+		y_min_lane_right <= IMAGE_H-11'h1;
+		y_max_lane_right <= 0;
 	end
 
 end
 
 //Process bounding box at the end of the frame.
-reg [1:0] msg_state;
+reg [4:0] msg_state;
 reg [10:0] left_red, right_red, top_red, bottom_red;
 reg [10:0] left_yellow, right_yellow, top_yellow, bottom_yellow;
 reg [10:0] left_blue, right_blue, top_blue, bottom_blue;
+reg [10:0] left_lane_left, right_lane_left, top_lane_left, bottom_lane_left;
+reg [10:0] left_lane_right, right_lane_right, top_lane_right, bottom_lane_right;
 reg [7:0] frame_count;
 always@(posedge clk) begin
 	if (eop & in_valid & packet_video) begin  //Ignore non-video packets
@@ -224,6 +280,16 @@ always@(posedge clk) begin
 		right_blue 	<= x_max_blue;
 		top_blue 	<= y_min_blue;
 		bottom_blue <= y_max_blue;
+
+		left_lane_left 		<= x_min_lane_left;
+		right_lane_left 	<= x_max_lane_left;
+		top_lane_left 		<= y_min_lane_left;
+		bottom_lane_left 	<= y_max_lane_left;
+
+		left_lane_right 	<= x_min_lane_right;
+		right_lane_right 	<= x_max_lane_right;
+		top_lane_right 		<= y_min_lane_right;
+		bottom_lane_right 	<= y_max_lane_right;
 		
 		
 		//Start message writer FSM once every MSG_INTERVAL frames, if there is room in the FIFO
@@ -236,7 +302,8 @@ always@(posedge clk) begin
 	end
 	
 	//Cycle through message writer states once started
-	if (msg_state != 2'b00) msg_state <= msg_state + 2'b01;
+	if (msg_state == 4'b1010) msg_state <= 4'b00; 	// max state used reached. Reset here
+	else if (msg_state != 4'b00) msg_state <= msg_state + 4'b01;
 
 end
 	
@@ -248,28 +315,121 @@ wire msg_buf_rd, msg_buf_flush;
 wire [7:0] msg_buf_size;
 wire msg_buf_empty;
 
-`define RED_BOX_MSG_ID "RBB"
+`define RED_BOX_MSG_ID 		"RBB"
+`define YELLOW_BOX_MSG_ID 	"YBB"
+`define BLUE_BOX_MSG_ID 	"BBB"
+
+//Calculate Area
+wire [31:0] area_red, area_yellow, area_blue;
+AREA	Area_red (
+	.x_min (left_red),
+	.x_max (right_red),
+	.y_min (top_red),
+	.y_max (bottom_red),
+	.area (area_red),
+	);
+AREA	Area_yellow (
+	.x_min (left_yellow),
+	.x_max (right_yellow),
+	.y_min (top_yellow),
+	.y_max (bottom_yellow),
+	.area (area_yellow),
+	);
+AREA	Area_blue (
+	.x_min (left_blue),
+	.x_max (right_blue),
+	.y_min (top_blue),
+	.y_max (bottom_blue),
+	.area (area_blue),
+	);
+
+//Calculate Lane Values
+wire [31:0] lane_offset, l_turn, r_turn, forward;
+LANE	lane_calculation (
+	.r_x_min (left_lane_right),
+	.r_x_max (right_lane_right),
+	.r_y_min (top_lane_right),
+	.r_y_max (bottom_lane_right),
+	.l_x_min (left_lane_left),
+	.l_x_max (right_lane_left),
+	.l_y_min (top_lane_left),
+	.l_y_max (bottom_lane_left),
+	.offset (lane_offset),
+	.left (l_turn),
+	.right (r_turn),
+	.forward (forward)
+	);
+
 
 always@(*) begin	//Write words to FIFO as state machine advances
 	case(msg_state)
-		2'b00: begin
+		4'b0000: begin
 			msg_buf_in = 32'b0;
 			msg_buf_wr = 1'b0;
 		end
-		2'b01: begin
+		4'b0001: begin
 			msg_buf_in = `RED_BOX_MSG_ID;	//Message ID
 			msg_buf_wr = 1'b1;
 		end
-		2'b10: begin
-			msg_buf_in = {5'b0, x_min_red, 5'b0, y_min_red};	//Top left coordinate
+		4'b0010: begin
+			msg_buf_in = {area_red};	//Area red
 			msg_buf_wr = 1'b1;
 		end
-		2'b11: begin
-			msg_buf_in = {5'b0, x_max_red, 5'b0, y_max_red}; //Bottom right coordinate
+		4'b0011: begin
+			msg_buf_in = {area_yellow}; //Area yellow
 			msg_buf_wr = 1'b1;
+		end
+		4'b0100: begin
+			msg_buf_in = {area_blue}; //Area blue
+			msg_buf_wr = 1'b1;
+		end
+
+		4'b0101: begin
+			msg_buf_in = {lane_offset};	//Lane offset
+			msg_buf_wr = 1'b1;
+		end
+
+		 4'b0110: begin
+		 	msg_buf_in = {r_turn};	//right turn
+			msg_buf_wr = 1'b1;
+		end
+		4'b0111: begin
+			msg_buf_in = {l_turn};	//left turn
+			msg_buf_wr = 1'b1;
+		end
+		
+		4'b1000: begin
+			msg_buf_in = {forward};	//End of road
+			msg_buf_wr = 1'b1;
+		end
+		4'b1001: begin
+			msg_buf_in = 32'b0;
+			msg_buf_wr = 1'b0;
+		end
+
+		// 4'b1010: begin
+		// 	msg_buf_in = {5'b0, x_min_blue, 5'b0, y_min_blue};	//Top left coordinate
+		// 	msg_buf_wr = 1'b1;
+		// end
+		// 4'b1011: begin
+		// 	msg_buf_in = {5'b0, x_max_blue, 5'b0, y_max_blue}; //Bottom right coordinate
+		// 	msg_buf_wr = 1'b1;
+		// end
+		// 4'b1100: begin
+		// 	msg_buf_in = {32'hFFFFFFFF}; //Lane Detection Output
+		// 	msg_buf_wr = 1'b1;
+		// end
+		// 4'b1101: begin
+		// 	msg_buf_in = {lane_offset, 21'b0 , right , left, straight}; //Offset and boolean values
+		// 	msg_buf_wr = 1'b1;
+		// end
+
+		default: begin
+			msg_buf_wr = 1'b0;
 		end
 	endcase
 end
+
 
 
 //Output message FIFO
