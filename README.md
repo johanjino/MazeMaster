@@ -1,4 +1,3 @@
 # MazeMaster
 
-
-[embed][http://example.com/file.pdf](https://github.com/alvi-codes/MazeMaster/blob/main/Y2_Group_Project_MazeMaster.pdf)https://github.com/alvi-codes/MazeMaster/blob/main/Y2_Group_Project_MazeMaster.pdf[/embed]
+[2023_EEEBalanceBug_Report.pdf](https://github.com/alvi-codes/MazeMaster/files/12157247/2023_EEEBalanceBug_Report.pdf)
